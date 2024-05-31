@@ -3,11 +3,11 @@
 #include <EthernetENC.h>
 #include <HardwareSerial.h>
 
-#define relayPin 13
+#define relayPin 4
 HardwareSerial SerialPort(0);
 
 byte mac[] = {0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xED};
-IPAddress ip(192, 168, 1, 151);
+IPAddress ip(192, 168, 2, 88);
 
 EthernetServer server(6000);
 EthernetClient client;
@@ -75,7 +75,7 @@ void setup()
 {
   Ethernet.init(5); 
   Serial.begin(115200);
-  SerialPort.begin(9600,SERIAL_8N1,3,1);
+  SerialPort.begin(115200,SERIAL_8N1,3,1);
   Ethernet.begin(mac, ip);
   server.begin();
   while (!Serial)
@@ -188,6 +188,7 @@ void loop()
     }
   }
 }
+
 
 
 /*
