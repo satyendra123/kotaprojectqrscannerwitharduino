@@ -1,4 +1,17 @@
-isme jisme maine avr/wdt.h library ka use kiya hai wo actually mere arduino ka code hai w5500 module ke sath. aur iske niche wale me maine esp with w5500 module ka use kiya hai
+in this i have used esp32 with enc28j60 module. connection is something like this 
 
- actually ethernet.h library arduino aur w5500 ke liye use hota hai.    aur ethernetLarge.h library me kuch modification karte hai uska use hum esp32 with w5500 module ke liye karte hai
- arduino ko jab enc28j60 ke sath use karte hai to EthernetENC.h library ka use karte hai aur jab hum esp aur enc ka use karte hai to usme bhi hume same EthernetENC library ka hi use karte hai
+1) EthernetENC  -       ESP32
+VCC       -       smps 5v
+GND       -       smps gnd
+cs        -       D5
+si        -       D23
+sck       -       D18
+s0        -       D19
+
+2) SCANNER    -    ESP32
+vcc        -   smps 5V
+gnd        -   smps gnd
+Tx         -   RX0
+RX         -   TX0
+
+3) ESP32 ke miniusb port ko esp32 ko connect krenge. aur usb side wale wires ko cut krke smps se connect krenge esp32 ko power dene ke liye
