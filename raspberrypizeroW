@@ -1,0 +1,42 @@
+Step-1 connection
+
+ENC28j60      -       pi zero w
+vcc       -          pin 17
+gnd       -          pin 20
+cs        -          pin 24
+si        -          pin 19
+sck       -          pin 23
+so        -          pin 21
+INT       -          pin 22
+
+Step-2
+Scanner   -         PI zero
+VCC       -         Pin 2
+GND       -         Pin 6
+TX        -         Pin 8
+RX        -         Pin 10
+
+Step-3
+Relay     -         PI zero
+vcc       -         pin 4
+gnd       -         pin 9
+IN        -         pin 11
+
+Step-4 raspberrypi.local ko ping krenge bina ethernet cable lgaye wifi ke through
+Step-5 vnc ke through raspberry pi ke desktop me enter krenge aur code ko run krenge
+Step-6 is wale file me jayenge aur sara chiz ko likh denge isse ki sara uart pin enable ho jayega
+go to /boot/firmware/config.txt
+enable_uart=1
+dtoverlay=uart0
+dtoverlay=uart1
+dtoverlay=uart2
+dtoverlay=uart3
+dtoverlay=uart4
+dtoverlay=uart5
+
+
+
+Step-5 sudo nano /boot/config.txt isme jayenge aur 
+dtparam=spi=on
+dtoverlay=enc28j60
+aisa likh denge aur iske bad sudo reboot krenge
