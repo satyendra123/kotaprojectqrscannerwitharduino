@@ -1,0 +1,215 @@
+//EXAMPLE-1 in this code i want that when it disconnects then it will automatically connects with the server
+#include <SPI.h>
+#include <EthernetENC.h>
+#include <HardwareSerial.h>
+
+#define relayPin 4
+HardwareSerial SerialPort(0);
+
+byte mac[] = {0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xED};
+IPAddress ip(192, 168, 2, 88);
+uint16_t clientPort = 6000; // Replace with the client's port
+
+EthernetServer server(6000);
+EthernetClient client;
+
+String clientData = "";
+String data = "";
+
+boolean IsClientConnected = false;
+
+unsigned long currentMillis, previousMillis, reconnectMillis;
+const unsigned long healthPacketInterval = 3000; // 3 seconds
+const unsigned long reconnectInterval = 5000;    // 5 seconds
+const unsigned long resetInterval = 60000;
+
+String remove_all_repeating_substrings(String input_value)
+{
+  int length = input_value.length();
+
+  for (int i = 1; i <= length / 2; i++)
+  {
+    String substr = input_value.substring(0, i);
+    int repeat_count = length / i;
+
+    String repeated = "";
+    for (int j = 0; j < repeat_count; j++)
+    {
+      repeated += substr;
+    }
+
+    if (repeated == input_value)
+    {
+      return substr;
+    }
+  }
+
+  return input_value;
+}
+
+String extractData(String inputString)
+{
+  if ((inputString.startsWith("QR") || inputString.startsWith("TG")) && inputString.endsWith("END"))
+  {
+    String extractedData = inputString.substring(2, inputString.length() - 3);
+    return extractedData;
+  }
+  else
+  {
+    return inputString;
+  }
+}
+
+bool isNumeric(String str)
+{
+  for (size_t i = 0; i < str.length(); i++)
+  {
+    if (!isDigit(str.charAt(i)))
+    {
+      return false;
+    }
+  }
+  return true;
+}
+
+void setup()
+{
+  Ethernet.init(5); 
+  Serial.begin(115200);
+  SerialPort.begin(115200, SERIAL_8N1, 3, 1);
+  Ethernet.begin(mac, ip);
+  server.begin();
+  while (!Serial)
+  {
+    ; // wait for Serial port to connect
+  }
+
+  Serial.print("Machine Gate IP: ");
+  Serial.println(ip);
+
+  pinMode(relayPin, OUTPUT);
+  digitalWrite(relayPin, HIGH);
+  
+  IsClientConnected = false;
+
+  currentMillis = 0;
+  previousMillis = 0;
+  reconnectMillis = 0;
+}
+
+void loop()
+{
+  if (Ethernet.linkStatus() == LinkON)
+  {
+    if (!IsClientConnected)
+    {
+      if (!client.connected())
+      {
+        client.stop(); // Ensure client is disconnected
+      }
+
+      EthernetClient newClient = server.available();
+      if (newClient)
+      {
+        client = newClient;
+        IsClientConnected = true;
+        client.flush();
+        Serial.println("Client Connected");
+        client.println("Connected to ESP32");
+      }
+      else
+      {
+        reconnectToClient();
+      }
+    }
+
+    if (IsClientConnected)
+    {
+      if (client.available() > 0)
+      {
+        char thisChar = client.read();
+        if (thisChar == '|')
+        {
+          clientData = "";
+        }
+        else if (thisChar == '%')
+        {
+          Serial.println(clientData);
+          if (clientData.equals("OPENEN"))
+          {
+            Serial.println("Barrier is opening");
+            digitalWrite(relayPin, LOW);
+            delay(300);
+            digitalWrite(relayPin, HIGH);
+          }
+        }
+        else
+        {
+          clientData += thisChar;
+        }
+      }
+
+      if (SerialPort.available())
+      {
+        data = SerialPort.readString();
+        Serial.println(data);
+        String result = remove_all_repeating_substrings(data);
+        String entryData = extractData(result);
+
+        if (isNumeric(entryData))
+        {
+          String sendTagData = "|ENTG-" + entryData + "%";
+          client.println(sendTagData);
+          Serial.println(sendTagData);
+        }
+        else
+        {
+          String sendEntryQRData = "|ENQR-" + entryData + "%";
+          client.println(sendEntryQRData);
+          Serial.println(sendEntryQRData);
+        }
+      }
+
+      currentMillis = millis();
+      if (currentMillis - previousMillis >= healthPacketInterval)
+      {
+        previousMillis = currentMillis;
+        client.println("|HLT%");
+      }
+
+      if (!client.connected())
+      {
+        Serial.println("Client Disconnected");
+        IsClientConnected = false;
+        reconnectMillis = millis();
+        if (millis() - reconnectMillis >= resetInterval)
+        {
+          Serial.println("Resetting...");
+          ESP.restart(); // Reset ESP32
+        }
+      }
+    }
+  }
+  else
+  {
+    Serial.println("Ethernet link is down, waiting for link to be up...");
+    IsClientConnected = false;
+  }
+}
+
+void reconnectToClient()
+{
+  static unsigned long lastReconnectAttempt = 0;
+  unsigned long now = millis();
+  
+  if (now - lastReconnectAttempt > reconnectInterval)
+  {
+    lastReconnectAttempt = now;
+    Serial.println("Attempting to reconnect to client...");
+    if (client.connect(clientIP, clientPort))
+    {
+      Serial.println("Reconnected to client");
+      IsClientConnected = true;
+    }
+  }
+}
