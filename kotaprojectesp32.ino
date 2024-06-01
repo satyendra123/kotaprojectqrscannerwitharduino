@@ -178,6 +178,11 @@ void loop()
       Serial.println("Client Disconnected");
       IsClientConnected = false;
       reconnectMillis = millis();
+      if (millis() - reconnectMillis >= resetInterval)
+      {
+        Serial.println("Resetting...");
+        ESP.restart(); // Reset ESP32
+      }
     }
 
     if ((!client.connected()) && (Ethernet.linkStatus() == LinkOFF))
